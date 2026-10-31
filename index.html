@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лабораторная работа №1 – Вариант 12649</title>
+
+    <style>
+        body {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 15px;
+            margin: 0;
+            padding: 0;
+        }
+
+        #header-info {
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            background-color: #ffffff;
+            border-bottom: 2px solid #cbd5e1;
+            padding-top: 15px;
+            padding-bottom: 15px;
+            padding-left: 25px;
+            padding-right: 25px;
+            margin-bottom: 20px;
+        }
+
+        #header-info h1 {
+            font-size: 22px;
+            margin-top: 0;
+            margin-bottom: 6px;
+            font-weight: bold;
+            color: #000;
+        }
+
+        #header-info p {
+            margin: 0;
+        }
+
+        .main-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 15px;
+            padding-right: 15px;
+            padding-bottom: 30px;
+        }
+
+        .panel-box {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            flex: 1 1 360px;
+        }
+
+        .panel-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #334155;
+            font-size: 14px;
+        }
+
+        select, input[type="text"] {
+            width: 100%;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            padding-left: 10px;
+            padding-right: 10px;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+            background-color: #ffffff;
+        }
+
+        select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #444;
+        }
+
+        .checkbox-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 4px;
+        }
+
+        .checkbox-label {
+            align-items: center;
+            cursor: pointer;
+            font-weight: normal;
+            font-size: 14px;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            margin-right: 6px;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        .button-group {
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button[type="submit"],
+        button[type="button"] {
+            padding-top: 9px;
+            padding-bottom: 9px;
+            padding-left: 18px;
+            padding-right: 18px;
+            font-size: 14px;
+            font-weight: 600;
+            border: 1px solid transparent;
+            cursor: pointer;
+        }
+
+        button[type="submit"] {
+            background-color: #2563eb;
+            color: #ffffff;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #1d4ed8;
+        }
+
+        button[type="submit"]:active {
+            background-color: #1e40af;
+        }
+
+        #btn-clear {
+            background-color: #f1f5f9;
+            color: #475569;
+            border-color: #cbd5e1;
+        }
+
+        #btn-clear:hover {
+            background-color: #e2e8f0;
+            color: #0f172a;
+        }
+
+        #error-box {
+            display: none;
+            background-color: #fef2f2;
+            border-left: 4px solid #ef4444;
+            color: #991b1b;
+            padding: 10px 14px;
+            margin-bottom: 16px;
+            font-size: 12px;
+        }
+
+        .canvas-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            background: #ffffff;
+        }
+
+        canvas {
+            border: 1px solid #e2e8f0;
+            background-color: #ffffff;
+        }
+
+        #results-table {
+            width: 100%;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        #results-table th,
+        #results-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        #results-table th {
+            background-color: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        #results-table tbody tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        #results-table tbody tr:hover {
+            background-color: #f1f5f9;
+        }
+
+        .status-hit {
+            color: #166534;
+            font-weight: bold;
+        }
+
+        .status-miss {
+            color: #991b1b;
+            font-weight: bold;
+        }
+
+        .empty-row {
+            text-align: center;
+            color: #94a3b8;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<header id="header-info">
+    <h1>Лабораторная работа №1</h1>
+    <p><strong>Студент:</strong> Перфилов Алексей Михайлович | <strong>Группа:</strong> P3209 | <strong>Вариант:</strong> 12649</p>
+</header>
+
+<div class="main-container">
+
+    <div class="panel-box">
+        <h2 class="panel-title">Координатная область</h2>
+        <div class="canvas-wrapper">
+            <canvas id="area-canvas" width="320" height="320"></canvas>
+        </div>
+    </div>
+
+    <div class="panel-box">
+        <h2 class="panel-title">Параметры точки</h2>
+
+        <div id="error-box"></div>
+
+        <form id="point-form">
+
+            <div class="form-group">
+                <label for="x-val">Координата X:</label>
+                <select id="x-val" name="x-val">
+                    <option value="-3">-3</option>
+                    <option value="-2">-2</option>
+                    <option value="-1">-1</option>
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="y-val">Координата Y (от -5 до 3):</label>
+                <input type="text" id="y-val" name="y-val" placeholder="Например: 1.25 или -2,75">
+            </div>
+
+            <div class="form-group">
+                <label>Радиус R:</label>
+                <div class="checkbox-options" id="r-group">
+                    <label class="checkbox-label"><input type="checkbox" name="r-val" value="1"> 1</label>
+                    <label class="checkbox-label"><input type="checkbox" name="r-val" value="2"> 2</label>
+                    <label class="checkbox-label"><input type="checkbox" name="r-val" value="3"> 3</label>
+                    <label class="checkbox-label"><input type="checkbox" name="r-val" value="4"> 4</label>
+                    <label class="checkbox-label"><input type="checkbox" name="r-val" value="5"> 5</label>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" id="btn-submit">Проверить точку</button>
+                <button type="button" id="btn-clear">Очистить историю</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="panel-box full-width">
+        <h2 class="panel-title">История проверок</h2>
+        <div class="table-responsive">
+            <table id="results-table">
+                <thead>
+                <tr>
+                    <th>X</th>
+                    <th>Y</th>
+                    <th>R</th>
+                    <th>Результат</th>
+                    <th>Время</th>
+                </tr>
+                </thead>
+                <tbody id="results-body">
+                <tr id="empty-row"><td colspan="5" class="empty-row">История проверок пуста</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const canvas = document.getElementById('area-canvas');
+        const ctx = canvas.getContext('2d');
+        const form = document.getElementById('point-form');
+        const xSelect = document.getElementById('x-val');
+        const yInput = document.getElementById('y-val');
+        const errorBox = document.getElementById('error-box');
+        const resultsBody = document.getElementById('results-body');
+        const btnClear = document.getElementById('btn-clear');
+        const rCheckboxes = document.querySelectorAll('input[name="r-val"]');
+
+        const STORAGE_KEY = 'itmo_web_lab1_v12649';
+        let checksHistory = [];
+
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                checksHistory = JSON.parse(stored);
+            }
+        } catch (e) {
+            checksHistory = [];
+        }
+
+
+        function getSelectedRs() {
+            const checkedBoxes = document.querySelectorAll('input[name="r-val"]:checked');
+            return Array.from(checkedBoxes).map(cb => parseInt(cb.value, 10));
+        }
+
+
+        function drawCanvas(rVal) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const center = w / 2;
+            const scale = 110;
+
+            ctx.clearRect(0, 0, w, h);
+
+            ctx.fillStyle = 'rgba(59, 130, 246, 1)';
+            ctx.strokeStyle = '#2563eb';
+            ctx.lineWidth = 1.5;
+
+            ctx.beginPath();
+            ctx.moveTo(center, center);
+            ctx.arc(center, center, scale / 2, 0, -Math.PI / 2, true);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(center, center);
+            ctx.lineTo(center - scale / 2, center);
+            ctx.lineTo(center, center - scale / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.rect(center, center, scale, scale / 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 1.5;
+            ctx.fillStyle = '#334155';
+            ctx.font = '11px sans-serif';
+
+            ctx.beginPath();
+            ctx.moveTo(15, center);
+            ctx.lineTo(w - 15, center);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(w - 15, center);
+            ctx.lineTo(w - 23, center - 4);
+            ctx.lineTo(w - 23, center + 4);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(center, h - 15);
+            ctx.lineTo(center, 15);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(center, 15);
+            ctx.lineTo(center - 4, 23);
+            ctx.lineTo(center + 4, 23);
+            ctx.closePath();
+            ctx.fill();
+
+            const labels = [
+                { name: '-R', x: center - scale, y: center, align: 'center', base: 'top', offX: 0, offY: 6 },
+                { name: '-R/2', x: center - scale / 2, y: center, align: 'center', base: 'top', offX: 0, offY: 6 },
+                { name: 'R/2', x: center + scale / 2, y: center, align: 'center', base: 'top', offX: 0, offY: 6 },
+                { name: 'R', x: center + scale, y: center, align: 'center', base: 'top', offX: 0, offY: 6 },
+                { name: 'R', x: center, y: center - scale, align: 'left', base: 'middle', offX: 6, offY: 0 },
+                { name: 'R/2', x: center, y: center - scale / 2, align: 'left', base: 'middle', offX: 6, offY: 0 },
+                { name: '-R/2', x: center, y: center + scale / 2, align: 'left', base: 'middle', offX: 6, offY: 0 },
+                { name: '-R', x: center, y: center + scale, align: 'left', base: 'middle', offX: 6, offY: 0 }
+            ];
+
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 1;
+
+            labels.forEach(pt => {
+                ctx.beginPath();
+                if (pt.offX === 0) {
+                    ctx.moveTo(pt.x, center - 3);
+                    ctx.lineTo(pt.x, center + 3);
+                } else {
+                    ctx.moveTo(center - 3, pt.y);
+                    ctx.lineTo(center + 3, pt.y);
+                }
+                ctx.stroke();
+
+                ctx.textAlign = pt.align;
+                ctx.textBaseline = pt.base;
+                ctx.fillText(pt.name, pt.x + pt.offX, pt.y + pt.offY);
+            });
+
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('x', w - 18, center - 6);
+
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText('y', center + 8, 16);
+
+            checksHistory.forEach(item => {
+                const px = center + (item.x / rVal) * scale;
+                const py = center - (parseFloat(item.y) / rVal) * scale;
+
+                if (px >= 5 && px <= w - 5 && py >= 5 && py <= h - 5) {
+                    ctx.beginPath();
+                    ctx.arc(px, py, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = item.hit ? '#16a34a' : '#dc2626';
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            });
+        }
+
+        rCheckboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                const rs = getSelectedRs();
+                if (rs.length > 0) {
+                    drawCanvas(rs[rs.length - 1]);
+                }
+            });
+        });
+
+        function checkHit(x, yRaw, r) {
+            const negative = yRaw.startsWith('-');
+            const [whole, decimal = ''] = yRaw.replace('-', '').split('.');
+            const scale = 10n ** BigInt(decimal.length);
+            let y = BigInt(whole + decimal);
+            if (negative) y = -y;
+            
+            const X = BigInt(x);
+            const R = BigInt(r);
+
+            const inQ1 = (X >= 0n && y >= 0n) && (4n * (X * X * scale * scale + y * y) <= R * R * scale * scale);
+
+            const inQ2 = (X <= 0n && y >= 0n) && (2n * X >= -R && 2n * y <= (2n * X + R) * scale);
+
+            const inQ4 = (X >= 0n && y <= 0n) && (X <= R && 2n * y >= -R * scale);
+
+            return inQ1 || inQ2 || inQ4;
+        }
+
+        function formatRussianDateTime(isoTimestamp) {
+            const dateObj = new Date(isoTimestamp);
+            return new Intl.DateTimeFormat('ru-RU', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                timeZoneName: 'short'
+            }).format(dateObj);
+        }
+
+        function renderTable() {
+            if (checksHistory.length === 0) {
+                resultsBody.innerHTML = '<tr id="empty-row"><td colspan="5" class="empty-row">История проверок пуста</td></tr>';
+                return;
+            }
+
+            resultsBody.innerHTML = '';
+            checksHistory.slice().reverse().forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.x}</td>
+                    <td>${item.y}</td>
+                    <td>${item.r}</td>
+                    <td class="${item.hit ? 'status-hit' : 'status-miss'}">${item.hit ? 'Попадание' : 'Промах'}</td>
+                    <td>${formatRussianDateTime(item.timestamp)}</td>
+                `;
+                resultsBody.appendChild(row);
+            });
+        }
+
+        function showError(msg) {
+            errorBox.textContent = msg;
+            errorBox.style.display = 'block';
+        }
+
+        function clearError() {
+            errorBox.textContent = '';
+            errorBox.style.display = 'none';
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            clearError();
+
+            const xVal = parseInt(xSelect.value, 10);
+            if (isNaN(xVal)) {
+                showError('Выберите корректное значение X.');
+                return;
+            }
+
+            const yRaw = yInput.value.trim().replace(',', '.');
+            if (yRaw === '') {
+                showError('Поле Y не может быть пустым. Введите число от -5 до 3.');
+                return;
+            }
+
+            if (!/^-?\d+(\.\d+)?$/.test(yRaw)) {
+                showError('В поле Y введены некорректные символы. Разрешены только числа (например: 1.25 или -2,75).');
+                return;
+            }
+            const isNegative = yRaw.startsWith('-');
+            const [integerText, fractionText = ''] = yRaw.replace('-', '').split('.');
+            const integerPart = Number(integerText);
+            const limit = isNegative ? 5 : 3;
+
+            if (
+                integerPart > limit ||
+                (integerPart === limit && /[1-9]/.test(fractionText))
+            ) {
+                showError('Координата Y выходит за допустимый диапазон [-5; 3]. Вы ввели: ' + yRaw);
+                return;
+            }
+
+            const selectedRs = getSelectedRs();
+            if (selectedRs.length === 0) {
+                showError('Пожалуйста, выберите хотя бы одно значение радиуса R.');
+                return;
+            }
+
+            const currentTimestamp = new Date().toISOString();
+
+            selectedRs.forEach(rVal => {
+                const isHit = checkHit(xVal, yRaw, rVal);
+                checksHistory.push({
+                    x: xVal,
+                    y: yRaw,
+                    r: rVal,
+                    hit: isHit,
+                    timestamp: currentTimestamp
+                });
+            });
+
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(checksHistory));
+            } catch (err) {}
+
+            renderTable();
+            drawCanvas(selectedRs[selectedRs.length - 1]);
+        });
+
+        btnClear.addEventListener('click', () => {
+            checksHistory = [];
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+            } catch (err) {}
+            renderTable();
+            const rs = getSelectedRs();
+            drawCanvas(rs.length > 0 ? rs[rs.length - 1] : 1);
+            clearError();
+        });
+
+        const initialRs = getSelectedRs();
+        drawCanvas(initialRs.length > 0 ? initialRs[initialRs.length - 1] : 1);
+        renderTable();
+    });
+</script>
+</body>
+</html>
