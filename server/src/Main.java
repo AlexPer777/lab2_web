@@ -24,7 +24,7 @@ public class Main {
                 String timestamp = Instant.now().toString();
                 double executionTimeMs = (System.nanoTime() - startTime) / 1_000_000.0;
                 String body = "{\"x\":" + point.x()
-                        + ",\"y\":" + point.y().toPlainString()
+                        + ",\"y\":\"" + point.y().toPlainString() + "\""
                         + ",\"r\":" + point.r().toPlainString()
                         + ",\"hit\":" + hit
                         + ",\"timestamp\":\"" + timestamp + "\""
@@ -41,7 +41,7 @@ public class Main {
         String headers = "HTTP/1.1 " + status + "\r\n"
                 + "Content-Type: application/json; charset=UTF-8\r\n"
                 + "Content-Length: " + content.length + "\r\n"
-                + "Cache-Control: no-store\r\n"
+                + "Cache-Control: no-store, no-cache, must-revalidate\r\n"
                 + extraHeaders
                 + "\r\n";
 
