@@ -88,7 +88,7 @@ FastCGI — протокол взаимодействия веб-сервера 
 
 Отсутствующие, повторяющиеся, неизвестные и неверные параметры приводят к ответу `400 Bad Request` с JSON-описанием ошибки. Для остальных HTTP-методов возвращается `405 Method Not Allowed`.
 
-Для проверки через браузер страницу нужно открывать через Apache: он должен обслуживать статические файлы и передавать запросы `/fcgi-bin/server.jar` Java FastCGI-серверу. Открытие `index.html` как файла или через обычный статический сервер не обеспечивает работу запросов. В `apache/httpd.conf` добавлена конфигурация для Helios на основе шаблона из задания. Перед запуском нужно указать свой домашний каталог и выделенные порты. На Helios конфигурация пока не проверена.
+Для проверки через браузер страницу нужно открывать через Apache: он должен обслуживать статические файлы и передавать запросы `/fcgi-bin/server.jar` Java FastCGI-серверу. Открытие `index.html` как файла или через обычный статический сервер не обеспечивает работу запросов. В `apache/httpd.conf` добавлена конфигурация для Helios: каталог `/home/studs/s501851/httpd-root`, HTTP-порт `24666`, FastCGI-порт `24777`. Запуск Apache и Java на Helios подтверждён пользователем. Полная проверка формы и истории через браузер остаётся заключительным шагом.
 
 ## Сборка и запуск сервера
 
@@ -99,7 +99,7 @@ mkdir -p server/build/classes
 javac --release 21 -encoding UTF-8 -cp server/lib/fastcgi-lib.jar -d server/build/classes server/src/*.java
 jar --create --file server/build/server.jar --manifest server/manifest.mf -C server/build/classes .
 cp server/lib/fastcgi-lib.jar server/build/fastcgi-lib.jar
-java -DFCGI_PORT=24001 -jar server/build/server.jar
+java -DFCGI_PORT=24777 -jar server/build/server.jar
 ```
 
 Рядом с `server.jar` должна находиться библиотека `fastcgi-lib.jar`: путь к ней указан в манифесте JAR. Остановка Java-сервера — `Ctrl+C`.
@@ -108,29 +108,32 @@ java -DFCGI_PORT=24001 -jar server/build/server.jar
 
 ## Apache на Helios
 
-В первых трёх строках `apache/httpd.conf` укажи:
+Текущие настройки `apache/httpd.conf`:
 
-- `APP_ROOT` — свой путь вместо `/home/studs/sXXXXXX/httpd-root`;
-- `HTTP_PORT` — выделенный порт Apache вместо `24000`;
-- `FCGI_PORT` — отдельный выделенный порт Java вместо `24001`.
+- `APP_ROOT` — `/home/studs/s501851/httpd-root`;
+- `HTTP_PORT` — `24666`;
+- `FCGI_PORT` — `24777`.
 
-Порты в примере нужно заменить на свои. Значение `FCGI_PORT` должно совпадать с `-DFCGI_PORT` при запуске Java.
-
-После переноса проекта на Helios выполни из его корня:
+После сборки выполни на Mac из корня проекта:
 
 ```sh
-mkdir -p ~/httpd-root/conf ~/httpd-root/public ~/httpd-root/fcgi-bin ~/httpd-root/run
-cp apache/httpd.conf ~/httpd-root/conf/httpd.conf
-cp index.html index.js ~/httpd-root/public/
-cp server/build/server.jar server/build/fastcgi-lib.jar ~/httpd-root/fcgi-bin/
+ssh -p 2222 s501851@helios.cs.ifmo.ru 'mkdir -p ~/httpd-root/conf ~/httpd-root/public ~/httpd-root/fcgi-bin ~/httpd-root/run'
+scp -P 2222 apache/httpd.conf s501851@helios.cs.ifmo.ru:~/httpd-root/conf/
+scp -P 2222 index.html index.js s501851@helios.cs.ifmo.ru:~/httpd-root/public/
+scp -P 2222 server/build/server.jar server/lib/fastcgi-lib.jar s501851@helios.cs.ifmo.ru:~/httpd-root/fcgi-bin/
+```
+
+На Helios проверь конфигурацию:
+
+```sh
 chmod 700 ~/httpd-root/run
 httpd -t -f ~/httpd-root/conf/httpd.conf
 ```
 
-Продолжай после сообщения `Syntax OK`. В одном терминале запусти Java, подставив свой FastCGI-порт:
+Продолжай после сообщения `Syntax OK`. В одном терминале на Helios запусти Java:
 
 ```sh
-java -DFCGI_PORT=24001 -jar ~/httpd-root/fcgi-bin/server.jar
+java -DFCGI_PORT=24777 -jar ~/httpd-root/fcgi-bin/server.jar
 ```
 
 В другом терминале на Helios запусти Apache от своего пользователя:
@@ -139,10 +142,10 @@ java -DFCGI_PORT=24001 -jar ~/httpd-root/fcgi-bin/server.jar
 httpd -f ~/httpd-root/conf/httpd.conf -k start
 ```
 
-Для проверки через SSH-туннель выполни на Mac, заменив логин и порт Apache:
+Для проверки через SSH-туннель выполни на Mac:
 
 ```sh
-ssh -p 2222 -L 8080:127.0.0.1:24000 sXXXXXX@helios.cs.ifmo.ru
+ssh -p 2222 -L 8080:127.0.0.1:24666 s501851@helios.cs.ifmo.ru
 ```
 
 Оставь SSH-соединение открытым и перейди в браузере на `http://localhost:8080/`. Для проверки сервера напрямую через тот же туннель:
@@ -161,6 +164,49 @@ httpd -f ~/httpd-root/conf/httpd.conf -k stop
 ```
 
 Логи находятся в `~/httpd-root/error.log` и `~/httpd-root/access.log`. Конфигурация использует пути модулей из выданного шаблона Helios и не предназначена для штатного Apache в macOS.
+
+
+## Проверка работы
+
+После сборки Java-классов запусти проверки параметров и границ области:
+
+```sh
+mkdir -p server/build/test-classes
+javac --release 21 -encoding UTF-8 -cp server/build/classes -d server/build/test-classes server/test/ServerTest.java
+java -cp server/build/classes:server/build/test-classes ServerTest
+```
+
+Ожидаемый вывод: `Passed: 53`. Тесты выполняются без Apache и не входят в серверный JAR.
+
+При работающем сервере и SSH-туннеле проверь форму:
+
+| X | Y | R | Ожидаемый результат |
+| --- | --- | --- | --- |
+| −1 | 2 | 2 | Попадание, граница прямоугольника |
+| −1 | −0,75 | 2,5 | Попадание, граница круга |
+| −1 | −0,76 | 2,5 | Промах |
+| 1 | −0,5 | 2,5 | Попадание, граница треугольника |
+| 1 | −0,6 | 2,5 | Промах |
+| 0 | 3 или −3 | 3 | Ошибка ввода |
+
+В инструментах разработчика браузера на вкладке Network должен появляться GET-запрос к `/fcgi-bin/server.jar` с параметрами `x`, `y`, `r`. Страница при отправке формы не перезагружается. В ответе должны быть `hit`, `timestamp` и `executionTimeMs`.
+
+Проверка сервера в обход формы:
+
+```sh
+curl -i 'http://localhost:8080/fcgi-bin/server.jar?x=1&y=-0.5&r=2.5'
+curl -i 'http://localhost:8080/fcgi-bin/server.jar?x=1&y=3&r=2.5'
+curl -i 'http://localhost:8080/fcgi-bin/server.jar?x=6&y=0&r=2'
+curl -i 'http://localhost:8080/fcgi-bin/server.jar?x=0&y=0&r=4'
+curl -i 'http://localhost:8080/fcgi-bin/server.jar?x=0&y=0&r=1&r=2'
+curl -i -X POST 'http://localhost:8080/fcgi-bin/server.jar'
+```
+
+Первый запрос должен вернуть `200`, следующие четыре — `400`, последний — `405`.
+
+После нескольких проверок перезагрузи страницу: история должна сохраниться. При смене R на графике должны оставаться только точки с выбранным радиусом. Кнопка «Очистить историю» должна очищать таблицу, точки и сохранённые записи; после перезагрузки история должна оставаться пустой.
+
+История хранится в `localStorage` браузера отдельно для каждого адреса сайта. При переходе с `localhost:8080` на другой адрес или порт прежняя история не переносится.
 
 
 ## Вопросы к защите
