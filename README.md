@@ -88,21 +88,80 @@ FastCGI — протокол взаимодействия веб-сервера 
 
 Отсутствующие, повторяющиеся, неизвестные и неверные параметры приводят к ответу `400 Bad Request` с JSON-описанием ошибки. Для остальных HTTP-методов возвращается `405 Method Not Allowed`.
 
-Для проверки через браузер страницу нужно открывать через Apache: он должен обслуживать статические файлы и передавать запросы `/fcgi-bin/server.jar` Java FastCGI-серверу. Открытие `index.html` как файла или через обычный статический сервер не обеспечивает работу запросов. Конфигурация Apache пока не добавлена.
+Для проверки через браузер страницу нужно открывать через Apache: он должен обслуживать статические файлы и передавать запросы `/fcgi-bin/server.jar` Java FastCGI-серверу. Открытие `index.html` как файла или через обычный статический сервер не обеспечивает работу запросов. В `apache/httpd.conf` добавлена конфигурация для Helios на основе шаблона из задания. Перед запуском нужно указать свой домашний каталог и выделенные порты. На Helios конфигурация пока не проверена.
 
 ## Сборка и запуск сервера
 
-Для локальной сборки используется JDK 27. Команды выполняются из корня репозитория:
+Для локальной сборки используется JDK 27 с целевой версией Java 21 для Helios. Команды выполняются из корня репозитория:
 
 ```sh
-mkdir -p server/build
-javac --release 27 -encoding UTF-8 -cp server/lib/fastcgi-lib.jar -d server/build server/src/*.java
-java -DFCGI_PORT=24001 -cp server/build:server/lib/fastcgi-lib.jar Main
+mkdir -p server/build/classes
+javac --release 21 -encoding UTF-8 -cp server/lib/fastcgi-lib.jar -d server/build/classes server/src/*.java
+jar --create --file server/build/server.jar --manifest server/manifest.mf -C server/build/classes .
+cp server/lib/fastcgi-lib.jar server/build/fastcgi-lib.jar
+java -DFCGI_PORT=24001 -jar server/build/server.jar
 ```
 
-Классы, собранные с `--release 27`, требуют Java 27 или новее и при запуске на Helios.
+Рядом с `server.jar` должна находиться библиотека `fastcgi-lib.jar`: путь к ней указан в манифесте JAR. Остановка Java-сервера — `Ctrl+C`.
 
-`24001` — пример порта FastCGI. На Helios нужно выбрать свободный разрешённый порт и указать его также в конфигурации Apache. Это порт протокола FastCGI; браузер должен обращаться к HTTP-порту Apache, который будет передавать запросы Java-приложению.
+Сервер собирается с `--release 21` и запускается на Java 21 или новее. Локальный JDK 27 поддерживает такую сборку.
+
+## Apache на Helios
+
+В первых трёх строках `apache/httpd.conf` укажи:
+
+- `APP_ROOT` — свой путь вместо `/home/studs/sXXXXXX/httpd-root`;
+- `HTTP_PORT` — выделенный порт Apache вместо `24000`;
+- `FCGI_PORT` — отдельный выделенный порт Java вместо `24001`.
+
+Порты в примере нужно заменить на свои. Значение `FCGI_PORT` должно совпадать с `-DFCGI_PORT` при запуске Java.
+
+После переноса проекта на Helios выполни из его корня:
+
+```sh
+mkdir -p ~/httpd-root/conf ~/httpd-root/public ~/httpd-root/fcgi-bin ~/httpd-root/run
+cp apache/httpd.conf ~/httpd-root/conf/httpd.conf
+cp index.html index.js ~/httpd-root/public/
+cp server/build/server.jar server/build/fastcgi-lib.jar ~/httpd-root/fcgi-bin/
+chmod 700 ~/httpd-root/run
+httpd -t -f ~/httpd-root/conf/httpd.conf
+```
+
+Продолжай после сообщения `Syntax OK`. В одном терминале запусти Java, подставив свой FastCGI-порт:
+
+```sh
+java -DFCGI_PORT=24001 -jar ~/httpd-root/fcgi-bin/server.jar
+```
+
+В другом терминале на Helios запусти Apache от своего пользователя:
+
+```sh
+httpd -f ~/httpd-root/conf/httpd.conf -k start
+```
+
+Для проверки через SSH-туннель выполни на Mac, заменив логин и порт Apache:
+
+```sh
+ssh -p 2222 -L 8080:127.0.0.1:24000 sXXXXXX@helios.cs.ifmo.ru
+```
+
+Оставь SSH-соединение открытым и перейди в браузере на `http://localhost:8080/`. Для проверки сервера напрямую через тот же туннель:
+
+```sh
+curl -i 'http://localhost:8080/fcgi-bin/server.jar?x=1&y=-0.5&r=2.5'
+curl -i 'http://localhost:8080/fcgi-bin/server.jar?x=1&y=3&r=2.5'
+```
+
+Первый запрос должен вернуть `200 OK` и `hit: true`, второй — `400 Bad Request`. Также проверь форму и сохранение истории после перезагрузки страницы.
+
+Остановка Apache на Helios:
+
+```sh
+httpd -f ~/httpd-root/conf/httpd.conf -k stop
+```
+
+Логи находятся в `~/httpd-root/error.log` и `~/httpd-root/access.log`. Конфигурация использует пути модулей из выданного шаблона Helios и не предназначена для штатного Apache в macOS.
+
 
 ## Вопросы к защите
 
