@@ -1,12 +1,14 @@
 import com.fastcgi.FCGIInterface;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 
 public class Main {
     public static void main(String[] args) {
         var fastcgi = new FCGIInterface();
 
         while (fastcgi.FCGIaccept() >= 0) {
+            long startTime = System.nanoTime();
             String method = FCGIInterface.request.params.getProperty("REQUEST_METHOD", "");
 
             if (!"GET".equals(method)) {
@@ -19,10 +21,14 @@ public class Main {
                 String query = FCGIInterface.request.params.getProperty("QUERY_STRING", "");
                 PointRequest point = PointRequest.parse(query);
                 boolean hit = AreaChecker.check(point.x(), point.y(), point.r());
+                String timestamp = Instant.now().toString();
+                double executionTimeMs = (System.nanoTime() - startTime) / 1_000_000.0;
                 String body = "{\"x\":" + point.x()
                         + ",\"y\":" + point.y().toPlainString()
                         + ",\"r\":" + point.r().toPlainString()
-                        + ",\"hit\":" + hit + "}";
+                        + ",\"hit\":" + hit
+                        + ",\"timestamp\":\"" + timestamp + "\""
+                        + ",\"executionTimeMs\":" + executionTimeMs + "}";
                 sendResponse("200 OK", "", body);
             } catch (IllegalArgumentException e) {
                 sendResponse("400 Bad Request", "", "{\"error\":\"" + e.getMessage() + "\"}");
