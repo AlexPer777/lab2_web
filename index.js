@@ -5,9 +5,11 @@ const yInput = document.getElementById('y-val');
 const errorBox = document.getElementById('error-box');
 const resultsBody = document.getElementById('results-body');
 const btnClear = document.getElementById('btn-clear');
+const btnSubmit = document.getElementById('btn-submit');
 const rSelect = document.getElementById('r-val');
 
 const STORAGE_KEY = 'lab2_web';
+const SERVER_URL = '/fcgi-bin/server.jar';
 let checksHistory = [];
 
 try {
@@ -141,23 +143,6 @@ rSelect.addEventListener('change', () => {
     drawCanvas(Number(rSelect.value));
 });
 
-function checkHit(x, yRaw, r) {
-    const negative = yRaw.startsWith('-');
-    const [whole, decimal = ''] = yRaw.replace('-', '').split('.');
-    const digits = Math.max(1, decimal.length);
-    const scale = 10n ** BigInt(digits);
-    let y = BigInt(whole + decimal) * 10n ** BigInt(digits - decimal.length);
-    if (negative) y = -y;
-
-    const X = BigInt(x) * scale;
-    const R = BigInt(r * 2) * scale / 2n;
-    const inRectangle = X <= 0n && 2n * X >= -R && y >= 0n && y <= R;
-    const inCircle = X <= 0n && y <= 0n && 4n * (X * X + y * y) <= R * R;
-    const inTriangle = X >= 0n && y <= 0n && y >= 2n * X - R;
-
-    return inRectangle || inCircle || inTriangle;
-}
-
 function formatRussianDateTime(isoTimestamp) {
     const dateObj = new Date(isoTimestamp);
     return new Intl.DateTimeFormat('ru-RU', {
@@ -173,7 +158,7 @@ function formatRussianDateTime(isoTimestamp) {
 
 function renderTable() {
     if (checksHistory.length === 0) {
-        resultsBody.innerHTML = '<tr id="empty-row"><td colspan="5" class="empty-row">История проверок пуста</td></tr>';
+        resultsBody.innerHTML = '<tr id="empty-row"><td colspan="6" class="empty-row">История проверок пуста</td></tr>';
         return;
     }
 
@@ -186,6 +171,7 @@ function renderTable() {
             <td>${item.r}</td>
             <td class="${item.hit ? 'status-hit' : 'status-miss'}">${item.hit ? 'Попадание' : 'Промах'}</td>
             <td>${formatRussianDateTime(item.timestamp)}</td>
+            <td>${item.executionTimeMs == null ? '—' : item.executionTimeMs.toFixed(3)}</td>
         `;
         resultsBody.appendChild(row);
     });
@@ -201,25 +187,26 @@ function clearError() {
     errorBox.style.display = 'none';
 }
 
-form.addEventListener('submit', (e) => {
+form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (btnSubmit.disabled) return;
     clearError();
 
     const selectedX = document.querySelector('input[name="x-val"]:checked');
     const xVal = selectedX ? Number(selectedX.value) : NaN;
     if (!Number.isInteger(xVal) || xVal < -3 || xVal > 5) {
-        showError('Выберите корректное значение X.');
+        showError('Выберите корректное значение X');
         return;
     }
 
     const yRaw = yInput.value.trim().replace(',', '.');
     if (yRaw === '') {
-        showError('Поле Y не может быть пустым. Введите число строго между −3 и 3.');
+        showError('Поле Y не может быть пустым. Введите число строго между −3 и 3');
         return;
     }
 
     if (!/^-?\d+(\.\d+)?$/.test(yRaw)) {
-        showError('В поле Y введены некорректные символы. Разрешены только числа (например: 1.25 или -2,75).');
+        showError('В поле Y введены некорректные символы. Разрешены только числа (например: 1.25 или -2,75)');
         return;
     }
     const [integerText] = yRaw.replace('-', '').split('.');
@@ -232,27 +219,38 @@ form.addEventListener('submit', (e) => {
 
     const rVal = Number(rSelect.value);
     if (![1, 1.5, 2, 2.5, 3].includes(rVal)) {
-        showError('Выберите радиус R из списка: 1; 1,5; 2; 2,5; 3.');
+        showError('Выберите радиус R из списка: 1; 1,5; 2; 2,5; 3');
         return;
     }
 
-    const currentTimestamp = new Date().toISOString();
-
-    const isHit = checkHit(xVal, yRaw, rVal);
-    checksHistory.push({
-        x: xVal,
-        y: yRaw,
-        r: rVal,
-        hit: isHit,
-        timestamp: currentTimestamp
-    });
+    const params = new URLSearchParams({x: xVal, y: yRaw, r: rVal});
+    btnSubmit.disabled = true;
+    btnClear.disabled = true;
+    btnSubmit.textContent = 'Проверка...';
 
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(checksHistory));
-    } catch (err) {}
+        const response = await fetch(SERVER_URL + '?' + params.toString(), {method: 'GET'});
+        const result = await response.json();
 
-    renderTable();
-    drawCanvas(rVal);
+        if (!response.ok) {
+            showError(result.error || 'Ошибка сервера');
+            return;
+        }
+
+        checksHistory.push(result);
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(checksHistory));
+        } catch (err) {}
+
+        renderTable();
+        drawCanvas(Number(rSelect.value));
+    } catch (err) {
+        showError('Не удалось выполнить запрос к серверу. Проверьте подключение и запуск Apache и Java');
+    } finally {
+        btnSubmit.disabled = false;
+        btnClear.disabled = false;
+        btnSubmit.textContent = 'Проверить точку';
+    }
 });
 
 btnClear.addEventListener('click', () => {
