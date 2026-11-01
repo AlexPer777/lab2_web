@@ -144,7 +144,6 @@ rSelect.addEventListener('change', () => {
 function checkHit(x, yRaw, r) {
     const negative = yRaw.startsWith('-');
     const [whole, decimal = ''] = yRaw.replace('-', '').split('.');
-    // Общий целочисленный масштаб сохраняет точность Y и дробных R.
     const digits = Math.max(1, decimal.length);
     const scale = 10n ** BigInt(digits);
     let y = BigInt(whole + decimal) * 10n ** BigInt(digits - decimal.length);
