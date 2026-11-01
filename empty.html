@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vade retro, Satana — связь потеряна</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 32px 20px;
+            background: #151210;
+            color: #fff4df;
+            font-family: Georgia, "Times New Roman", serif;
+            text-align: center;
+        }
+        main {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+        h1 {
+            margin: 16px 0;
+            font-size: 40px;
+        }
+        .cross {
+            margin: 0 0 20px;
+            color: #df967d;
+            font-size: 112px;
+            line-height: 1;
+        }
+        .status {
+            color: #df967d;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+        }
+        .intro {
+            margin-bottom: 32px;
+            color: #d2c2ad;
+            line-height: 1.6;
+        }
+        .prayer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 28px;
+            margin-bottom: 32px;
+        }
+        .prayer section {
+            flex: 1 1 300px;
+            padding: 24px 12px;
+            border-top: 1px solid #9c6552;
+            background: #201b17;
+        }
+        h2 {
+            margin: 0 0 20px;
+            color: #df967d;
+            font-size: 20px;
+        }
+        blockquote {
+            margin: 0;
+            font-size: 20px;
+            line-height: 1.9;
+        }
+        .latin {
+            font-style: italic;
+        }
+        button {
+            padding: 12px 24px;
+            border: 1px solid #df967d;
+            background: #201b17;
+            color: #fff4df;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .source {
+            margin-top: 24px;
+            color: #d2c2ad;
+            font-size: 13px;
+        }
+        a {
+            color: inherit;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <p class="cross" aria-hidden="true">✝</p>
+    <p class="status">Связь с сервером потеряна</p>
+    <h1 lang="la">Vade retro, Satana</h1>
+    <p class="intro">Сервер не ответил. На всякий случай: молитва</p>
+    <div class="prayer">
+        <section>
+            <h2>Латинский текст</h2>
+            <blockquote class="latin" lang="la">
+                Crux sancta sit mihi lux<br>
+                Non draco sit mihi dux<br>
+                Vade retro satan<br>
+                Cumquat suede mihi van<br>
+                Sunt male qua lib's<br>
+                Apse even babas
+            </blockquote>
+        </section>
+        <section>
+            <h2>Перевод на русский</h2>
+            <blockquote>
+                Светит мне пусть Крест Святой,<br>
+                Древний змий да сгинет злой.<br>
+                Сатана пускай отыдет,<br>
+                Суета в меня — не внидет.<br>
+                Злом меня да не искусит,<br>
+                Чашу яда сам да вкусит.
+            </blockquote>
+        </section>
+    </div>
+    <button id="back" type="button">Вернуться к лабораторной</button>
+    <p class="source">Текст: <a href="https://ru.wikipedia.org/wiki/Vade_retro,_Satana" target="_blank" rel="noopener noreferrer">Vade retro, Satana — Википедия</a></p>
+</main>
+<script>
+    document.getElementById('back').addEventListener('click', () => {
+        if (window.parent !== window) {
+            window.parent.postMessage('close-error-page', window.location.origin);
+        } else {
+            window.location.href = '/';
+        }
+    });
+</script>
+</body>
+</html>

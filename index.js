@@ -7,6 +7,7 @@ const resultsBody = document.getElementById('results-body');
 const btnClear = document.getElementById('btn-clear');
 const btnSubmit = document.getElementById('btn-submit');
 const rSelect = document.getElementById('r-val');
+const connectionErrorPage = document.getElementById('connection-error-page');
 
 const STORAGE_KEY = 'lab2_web';
 const SERVER_URL = '/fcgi-bin/server.jar';
@@ -187,6 +188,23 @@ function clearError() {
     errorBox.style.display = 'none';
 }
 
+function showConnectionError() {
+    connectionErrorPage.hidden = false;
+    document.body.style.overflow = 'hidden';
+    connectionErrorPage.focus();
+}
+
+window.addEventListener('offline', showConnectionError);
+window.addEventListener('message', (event) => {
+    if (event.source === connectionErrorPage.contentWindow
+            && event.origin === window.location.origin
+            && event.data === 'close-error-page') {
+        connectionErrorPage.hidden = true;
+        document.body.style.overflow = '';
+        btnSubmit.focus();
+    }
+});
+
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (btnSubmit.disabled) return;
@@ -227,9 +245,18 @@ form.addEventListener('submit', async (e) => {
     btnSubmit.disabled = true;
     btnClear.disabled = true;
     btnSubmit.textContent = 'Проверка...';
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
     try {
-        const response = await fetch(SERVER_URL + '?' + params.toString(), {method: 'GET'});
+        const response = await fetch(SERVER_URL + '?' + params.toString(), {
+            method: 'GET',
+            signal: controller.signal
+        });
+        if (response.status >= 500) {
+            showConnectionError();
+            return;
+        }
         const result = await response.json();
 
         if (!response.ok) {
@@ -245,8 +272,9 @@ form.addEventListener('submit', async (e) => {
         renderTable();
         drawCanvas(Number(rSelect.value));
     } catch (err) {
-        showError('Не удалось выполнить запрос к серверу. Проверьте подключение и запуск Apache и Java');
+        showConnectionError();
     } finally {
+        clearTimeout(timeout);
         btnSubmit.disabled = false;
         btnClear.disabled = false;
         btnSubmit.textContent = 'Проверить точку';

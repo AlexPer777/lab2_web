@@ -27,6 +27,7 @@
 ## Файлы
 
 - `index.html` — страница и CSS.
+- `empty.html` — страница ошибки связи, заранее загружается в скрытый iframe.
 - `index.js` — форма, запросы, график и история.
 - `server/src/Main.java` — приём FastCGI-запросов и JSON-ответы.
 - `server/src/PointRequest.java` — разбор и проверка параметров.
@@ -55,7 +56,7 @@ jar --create --file server/build/server.jar --manifest server/manifest.mf -C ser
 ```sh
 ssh -p 2222 s501851@helios.cs.ifmo.ru 'mkdir -p ~/httpd-root/conf ~/httpd-root/public ~/httpd-root/fcgi-bin ~/httpd-root/run'
 scp -P 2222 apache/httpd.conf s501851@helios.cs.ifmo.ru:~/httpd-root/conf/
-scp -P 2222 index.html index.js s501851@helios.cs.ifmo.ru:~/httpd-root/public/
+scp -P 2222 index.html index.js empty.html s501851@helios.cs.ifmo.ru:~/httpd-root/public/
 scp -P 2222 server/build/server.jar server/lib/fastcgi-lib.jar s501851@helios.cs.ifmo.ru:~/httpd-root/fcgi-bin/
 ```
 
@@ -82,6 +83,8 @@ ssh -p 2222 -L 8080:127.0.0.1:24666 s501851@helios.cs.ifmo.ru
 ```
 
 Страница доступна по адресу [localhost:8080](http://localhost:8080/). Для подключения к Helios нужен VPN. При открытии `index.html` как файла запросы к серверу работать не будут.
+
+При сетевой ошибке, ответе 5xx, некорректном JSON или ожидании дольше 10 секунд поверх лабы открывается `empty.html`. Ошибки ввода остаются в форме. Кнопка возврата закрывает страницу ошибки без потери введённых данных. При обрыве связи до загрузки самой лабы показать эту страницу не получится.
 
 ## Обновление
 
