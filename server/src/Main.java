@@ -18,9 +18,11 @@ public class Main {
             try {
                 String query = FCGIInterface.request.params.getProperty("QUERY_STRING", "");
                 PointRequest point = PointRequest.parse(query);
+                boolean hit = AreaChecker.check(point.x(), point.y(), point.r());
                 String body = "{\"x\":" + point.x()
                         + ",\"y\":" + point.y().toPlainString()
-                        + ",\"r\":" + point.r().toPlainString() + "}";
+                        + ",\"r\":" + point.r().toPlainString()
+                        + ",\"hit\":" + hit + "}";
                 sendResponse("200 OK", "", body);
             } catch (IllegalArgumentException e) {
                 sendResponse("400 Bad Request", "", "{\"error\":\"" + e.getMessage() + "\"}");
