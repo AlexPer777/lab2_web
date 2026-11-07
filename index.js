@@ -12,11 +12,33 @@ const connectionErrorPage = document.getElementById('connection-error-page');
 const STORAGE_KEY = 'lab2_web';
 const SERVER_URL = '/fcgi-bin/server.jar';
 let checksHistory = [];
+let connectionErrorReason = '';
+
+function isValidResult(item) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+    if (!Number.isInteger(item.x) || item.x < -3 || item.x > 5) return false;
+    if (![1, 1.5, 2, 2.5, 3].includes(item.r)) return false;
+    if (typeof item.hit !== 'boolean') return false;
+    if (typeof item.timestamp !== 'string' || !Number.isFinite(Date.parse(item.timestamp))) return false;
+
+    if (typeof item.y === 'string') {
+        if (!/^-?\d+(\.\d+)?$/.test(item.y)) return false;
+        const whole = item.y.replace('-', '').split('.')[0];
+        if (Number(whole) >= 3) return false;
+    } else if (typeof item.y !== 'number' || !Number.isFinite(item.y) || Math.abs(item.y) >= 3) {
+        return false;
+    }
+
+    return item.executionTimeMs == null
+        || (typeof item.executionTimeMs === 'number'
+            && Number.isFinite(item.executionTimeMs) && item.executionTimeMs >= 0);
+}
 
 try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-        checksHistory = JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        checksHistory = Array.isArray(parsed) ? parsed.filter(isValidResult) : [];
     }
 } catch (e) {
     checksHistory = [];
@@ -188,13 +210,24 @@ function clearError() {
     errorBox.style.display = 'none';
 }
 
-function showConnectionError() {
+function updateConnectionErrorReason() {
+    const reason = connectionErrorPage.contentDocument?.getElementById('error-reason');
+    if (reason && connectionErrorReason) reason.textContent = connectionErrorReason;
+}
+
+connectionErrorPage.addEventListener('load', updateConnectionErrorReason);
+
+function showConnectionError(message) {
+    connectionErrorReason = message;
+    updateConnectionErrorReason();
     connectionErrorPage.hidden = false;
     document.body.style.overflow = 'hidden';
     connectionErrorPage.focus();
 }
 
-window.addEventListener('offline', showConnectionError);
+window.addEventListener('offline', () => {
+    showConnectionError('Браузер сообщает, что сеть недоступна. Проверь подключение к интернету и VPN.');
+});
 window.addEventListener('message', (event) => {
     if (event.source === connectionErrorPage.contentWindow
             && event.origin === window.location.origin
@@ -254,13 +287,26 @@ form.addEventListener('submit', async (e) => {
             signal: controller.signal
         });
         if (response.status >= 500) {
-            showConnectionError();
+            showConnectionError('Сервер вернул ошибку HTTP ' + response.status
+                + '. Проверь Java на Helios и журнал ошибок Apache.');
             return;
         }
-        const result = await response.json();
+        let result;
+        try {
+            result = await response.json();
+        } catch (err) {
+            if (controller.signal.aborted) throw err;
+            showConnectionError('Получен ответ HTTP ' + response.status
+                + ', но его не удалось прочитать как JSON');
+            return;
+        }
 
         if (!response.ok) {
-            showError(result.error || 'Ошибка сервера');
+            showError(typeof result?.error === 'string' ? result.error : 'Ошибка HTTP ' + response.status);
+            return;
+        }
+        if (!isValidResult(result)) {
+            showConnectionError('Сервер вернул JSON с некорректными данными результата');
             return;
         }
 
@@ -272,7 +318,11 @@ form.addEventListener('submit', async (e) => {
         renderTable();
         drawCanvas(Number(rSelect.value));
     } catch (err) {
-        showConnectionError();
+        if (controller.signal.aborted) {
+            showConnectionError('Ответ не получен за 10 секунд. Запрос отменён. Проверь связь и работу серверов');
+        } else {
+            showConnectionError('Не удалось связаться с сервером. Проверь SSH-туннель и запуск Apache');
+        }
     } finally {
         clearTimeout(timeout);
         btnSubmit.disabled = false;
