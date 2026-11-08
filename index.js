@@ -11,27 +11,40 @@ const connectionErrorPage = document.getElementById('connection-error-page');
 
 const STORAGE_KEY = 'lab2_web';
 const SERVER_URL = '/fcgi-bin/server.jar';
+const R_VALUES = [1, 1.5, 2, 2.5, 3];
 let checksHistory = [];
 let connectionErrorReason = '';
 
+function isValidX(x) {
+    return Number.isInteger(x) && x >= -3 && x <= 5;
+}
+
+function getYError(y) {
+    if (y === '') return 'Поле Y не может быть пустым. Введите число строго между −3 и 3';
+    if (!/^-?\d+(\.\d+)?$/.test(y)) {
+        return 'В поле Y введены некорректные символы. Разрешены только числа (например: 1.25 или -2,75)';
+    }
+    const whole = y.replace('-', '').split('.')[0];
+    if (Number(whole) >= 3) {
+        return 'Координата Y должна быть строго между −3 и 3. Вы ввели: ' + y;
+    }
+    return '';
+}
+
 function isValidResult(item) {
     if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
-    if (!Number.isInteger(item.x) || item.x < -3 || item.x > 5) return false;
-    if (![1, 1.5, 2, 2.5, 3].includes(item.r)) return false;
+    if (!isValidX(item.x) || !R_VALUES.includes(item.r)) return false;
     if (typeof item.hit !== 'boolean') return false;
     if (typeof item.timestamp !== 'string' || !Number.isFinite(Date.parse(item.timestamp))) return false;
 
-    if (typeof item.y === 'string') {
-        if (!/^-?\d+(\.\d+)?$/.test(item.y)) return false;
-        const whole = item.y.replace('-', '').split('.')[0];
-        if (Number(whole) >= 3) return false;
-    } else if (typeof item.y !== 'number' || !Number.isFinite(item.y) || Math.abs(item.y) >= 3) {
+    if (typeof item.y === 'number') {
+        if (!Number.isFinite(item.y) || Math.abs(item.y) >= 3) return false;
+    } else if (typeof item.y !== 'string' || getYError(item.y)) {
         return false;
     }
 
     return item.executionTimeMs == null
-        || (typeof item.executionTimeMs === 'number'
-            && Number.isFinite(item.executionTimeMs) && item.executionTimeMs >= 0);
+        || (Number.isFinite(item.executionTimeMs) && item.executionTimeMs >= 0);
 }
 
 try {
@@ -245,31 +258,20 @@ form.addEventListener('submit', async (e) => {
 
     const selectedX = document.querySelector('input[name="x-val"]:checked');
     const xVal = selectedX ? Number(selectedX.value) : NaN;
-    if (!Number.isInteger(xVal) || xVal < -3 || xVal > 5) {
+    if (!isValidX(xVal)) {
         showError('Выберите корректное значение X');
         return;
     }
 
     const yRaw = yInput.value.trim().replace(',', '.');
-    if (yRaw === '') {
-        showError('Поле Y не может быть пустым. Введите число строго между −3 и 3');
-        return;
-    }
-
-    if (!/^-?\d+(\.\d+)?$/.test(yRaw)) {
-        showError('В поле Y введены некорректные символы. Разрешены только числа (например: 1.25 или -2,75)');
-        return;
-    }
-    const [integerText] = yRaw.replace('-', '').split('.');
-    const integerPart = Number(integerText);
-
-    if (integerPart >= 3) {
-        showError('Координата Y должна быть строго между −3 и 3. Вы ввели: ' + yRaw);
+    const yError = getYError(yRaw);
+    if (yError) {
+        showError(yError);
         return;
     }
 
     const rVal = Number(rSelect.value);
-    if (![1, 1.5, 2, 2.5, 3].includes(rVal)) {
+    if (!R_VALUES.includes(rVal)) {
         showError('Выберите радиус R из списка: 1; 1,5; 2; 2,5; 3');
         return;
     }
