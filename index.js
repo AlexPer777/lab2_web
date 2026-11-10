@@ -61,7 +61,13 @@ function drawCanvas(rVal) {
     const w = canvas.width;
     const h = canvas.height;
     const center = w / 2;
-    const scale = 110;
+    const points = checksHistory.filter(item => item.r === rVal);
+    let limit = rVal;
+    for (const item of points) {
+        limit = Math.max(limit, Math.abs(item.x), Math.abs(Number(item.y)));
+    }
+    const pixelsPerUnit = (Math.min(w, h) / 2 - 40) / limit;
+    const scale = rVal * pixelsPerUnit;
 
     ctx.clearRect(0, 0, w, h);
 
@@ -159,19 +165,17 @@ function drawCanvas(rVal) {
     ctx.textBaseline = 'top';
     ctx.fillText('y', center + 8, 16);
 
-    checksHistory.filter(item => item.r === rVal).forEach(item => {
-        const px = center + (item.x / rVal) * scale;
-        const py = center - (parseFloat(item.y) / rVal) * scale;
+    points.forEach(item => {
+        const px = center + item.x * pixelsPerUnit;
+        const py = center - Number(item.y) * pixelsPerUnit;
 
-        if (px >= 5 && px <= w - 5 && py >= 5 && py <= h - 5) {
-            ctx.beginPath();
-            ctx.arc(px, py, 4, 0, Math.PI * 2);
-            ctx.fillStyle = item.hit ? '#16a34a' : '#dc2626';
-            ctx.fill();
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-        }
+        ctx.beginPath();
+        ctx.arc(px, py, 4, 0, Math.PI * 2);
+        ctx.fillStyle = item.hit ? '#16a34a' : '#dc2626';
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
     });
 }
 

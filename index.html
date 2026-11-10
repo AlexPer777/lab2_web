@@ -45,6 +45,11 @@
             border: 1px solid #e2e8f0;
             padding: 20px;
             flex: 1 1 360px;
+            min-width: 0;
+        }
+
+        .full-width {
+            flex-basis: 100%;
         }
 
         .panel-title {
@@ -155,6 +160,13 @@
 
         canvas {
             border: 1px solid #e2e8f0;
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
         }
 
         #results-table {
@@ -224,7 +236,7 @@
     <div class="panel-box">
         <h2 class="panel-title">Координатная область</h2>
         <div class="canvas-wrapper">
-            <canvas id="area-canvas" width="320" height="320"></canvas>
+            <canvas id="area-canvas" width="500" height="500"></canvas>
         </div>
     </div>
 
