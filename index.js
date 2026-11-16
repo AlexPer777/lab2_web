@@ -268,6 +268,10 @@ form.addEventListener('submit', async (e) => {
     }
 
     const yRaw = yInput.value.trim().replace(',', '.');
+    if (yRaw.length > 256) {
+        showError('Координата Y не должна содержать больше 256 символов');
+        return;
+    }
     const yError = getYError(yRaw);
     if (yError) {
         showError(yError);

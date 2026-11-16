@@ -1,23 +1,26 @@
 import com.fastcgi.FCGIInterface;
 
+import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 
 public class Main {
     public static void main(String[] args) {
         var fastcgi = new FCGIInterface();
+        PrintStream log = System.err;
 
-        while (fastcgi.FCGIaccept() >= 0) {
+        while (acceptRequest(fastcgi, log)) {
             long startTime = System.nanoTime();
-            String method = FCGIInterface.request.params.getProperty("REQUEST_METHOD", "");
-
-            if (!"GET".equals(method)) {
-                sendResponse("405 Method Not Allowed", "Allow: GET\r\n",
-                        "{\"error\":\"Only GET requests are supported\"}");
-                continue;
-            }
 
             try {
+                String method = FCGIInterface.request.params.getProperty("REQUEST_METHOD", "");
+                if (!"GET".equals(method)) {
+                    sendResponse("405 Method Not Allowed", "Allow: GET\r\n",
+                            "{\"error\":\"Only GET requests are supported\"}");
+                    continue;
+                }
+
                 String query = FCGIInterface.request.params.getProperty("QUERY_STRING", "");
                 PointRequest point = PointRequest.parse(query);
                 boolean hit = AreaChecker.check(point.x(), point.y(), point.r());
@@ -30,12 +33,63 @@ public class Main {
                         + ",\"timestamp\":\"" + timestamp + "\""
                         + ",\"executionTimeMs\":" + executionTimeMs + "}";
                 sendResponse("200 OK", "", body);
-            } catch (IllegalArgumentException e)
-            { String safeMsg = e.getMessage() == null ? "Invalid request" : e.getMessage().replace("\"", "\\\"");
-                sendResponse("400 Bad Request", "", "{\"error\":\"" + safeMsg + "\"}");
-            } catch (Exception e) { sendResponse("500 Internal Server Error", "", "{\"error\":\"Internal server error\"}");
+            } catch (IllegalArgumentException e) {
+                String message = e.getMessage() == null ? "Invalid request" : e.getMessage();
+                sendResponse("400 Bad Request", "", "{\"error\":" + jsonString(message) + "}");
+            } catch (Exception e) {
+                e.printStackTrace(log);
+                sendResponse("500 Internal Server Error", "", "{\"error\":\"Internal server error\"}");
             }
         }
+    }
+
+    private static boolean acceptRequest(FCGIInterface fastcgi, PrintStream log) {
+        while (true) {
+            try {
+                if (fastcgi.FCGIaccept() >= 0) {
+                    return true;
+                }
+            } catch (RuntimeException e) {
+                log.println("Failed to receive FastCGI request: " + e);
+            }
+
+            if (FCGIInterface.request != null && FCGIInterface.request.socket != null) {
+                try {
+                    FCGIInterface.request.socket.close();
+                } catch (IOException e) {
+                    log.println("Failed to close FastCGI connection: " + e);
+                }
+            }
+            FCGIInterface.request = null;
+            if (FCGIInterface.srvSocket == null || FCGIInterface.srvSocket.isClosed()) {
+                log.println("FastCGI listener is unavailable; server stopped");
+                return false;
+            }
+        }
+    }
+
+    static String jsonString(String value) {
+        StringBuilder result = new StringBuilder("\"");
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            switch (c) {
+                case '"' -> result.append("\\\"");
+                case '\\' -> result.append("\\\\");
+                case '\b' -> result.append("\\b");
+                case '\f' -> result.append("\\f");
+                case '\n' -> result.append("\\n");
+                case '\r' -> result.append("\\r");
+                case '\t' -> result.append("\\t");
+                default -> {
+                    if (c < 0x20) {
+                        result.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        result.append(c);
+                    }
+                }
+            }
+        }
+        return result.append('"').toString();
     }
 
     private static void sendResponse(String status, String extraHeaders, String body) {

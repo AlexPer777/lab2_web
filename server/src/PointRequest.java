@@ -6,11 +6,17 @@ import java.util.Map;
 import java.util.Set;
 
 public record PointRequest(int x, BigDecimal y, BigDecimal r) {
+    private static final int MAX_QUERY_LENGTH = 4096;
+    private static final int MAX_VALUE_LENGTH = 256;
+
     public static PointRequest parse(String query) {
         Map<String, String> parameters = new HashMap<>();
 
         if (query == null || query.isEmpty()) {
             throw new IllegalArgumentException("Parameters x, y and r are required");
+        }
+        if (query.length() > MAX_QUERY_LENGTH) {
+            throw new IllegalArgumentException("Query string is too long (maximum 4096 characters)");
         }
 
         for (String pair : query.split("&", -1)) {
@@ -20,7 +26,17 @@ public record PointRequest(int x, BigDecimal y, BigDecimal r) {
             }
 
             String name = decode(parts[0]);
-            String value = decode(parts[1]).trim();
+            String value = decode(parts[1]);
+            if (value.length() > MAX_VALUE_LENGTH) {
+                throw new IllegalArgumentException("Parameter is too long (maximum 256 characters)");
+            }
+            for (int i = 0; i < value.length(); i++) {
+                char c = value.charAt(i);
+                if (c < 0x20 || c == 0x7f) {
+                    throw new IllegalArgumentException("Control characters are not allowed in parameters");
+                }
+            }
+            value = value.trim();
             if (!Set.of("x", "y", "r").contains(name)) {
                 throw new IllegalArgumentException("Unknown parameter");
             }
