@@ -30,15 +30,17 @@ public class Main {
                         + ",\"timestamp\":\"" + timestamp + "\""
                         + ",\"executionTimeMs\":" + executionTimeMs + "}";
                 sendResponse("200 OK", "", body);
-            } catch (IllegalArgumentException e) {
-                sendResponse("400 Bad Request", "", "{\"error\":\"" + e.getMessage() + "\"}");
+            } catch (IllegalArgumentException e)
+            { String safeMsg = e.getMessage() == null ? "Invalid request" : e.getMessage().replace("\"", "\\\"");
+                sendResponse("400 Bad Request", "", "{\"error\":\"" + safeMsg + "\"}");
+            } catch (Exception e) { sendResponse("500 Internal Server Error", "", "{\"error\":\"Internal server error\"}");
             }
         }
     }
 
     private static void sendResponse(String status, String extraHeaders, String body) {
         byte[] content = body.getBytes(StandardCharsets.UTF_8);
-        String headers = "HTTP/1.1 " + status + "\r\n"
+        String headers = "Status: " + status + "\r\n"
                 + "Content-Type: application/json; charset=UTF-8\r\n"
                 + "Content-Length: " + content.length + "\r\n"
                 + "Cache-Control: no-store, no-cache, must-revalidate\r\n"
