@@ -47,6 +47,26 @@ public class ServerTest {
             checkInvalid(query);
         }
 
+        // trim() must not turn NUL and other control characters into valid numbers.
+        for (String name : new String[]{"x", "y", "r"}) {
+            for (int code = 0; code <= 0x20; code++) {
+                int control = code == 0x20 ? 0x7f : code;
+                String encoded = String.format("%%%02X", control);
+                String value = name.equals("r") ? "2" : "0";
+                String query = "x=0&y=0&r=2";
+                checkInvalid(query.replace(name + "=" + value,
+                        name + "=" + encoded + value + encoded));
+            }
+        }
+        checkInvalid(null);
+        checkInvalid("x=" + "0".repeat(257) + "&y=0&r=2");
+        checkInvalid("x=0&y=0." + "1".repeat(255) + "&r=2");
+        checkInvalid("x=0&y=0&r=2." + "0".repeat(255));
+        checkInvalid("x=0&y=0&r=2&" + "a".repeat(4096));
+        checkPoint("x=0&y=0." + "1".repeat(254) + "&r=2", true);
+        checkPoint("x=0&y=0&r=2." + "0".repeat(254), true);
+        checkPoint("x=%200%20&y=%200%20&r=%202%20", true);
+
         System.out.println("Passed: " + checks);
     }
 
