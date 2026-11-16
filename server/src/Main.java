@@ -8,7 +8,6 @@ import java.time.Instant;
 public class Main {
     public static void main(String[] args) {
         var fastcgi = new FCGIInterface();
-        // FastCGI replaces System.err with a stream belonging to the current request.
         PrintStream log = System.err;
 
         while (acceptRequest(fastcgi, log)) {
@@ -51,12 +50,9 @@ public class Main {
                     return true;
                 }
             } catch (RuntimeException e) {
-                // The supplied library can throw on EOF before finishing a request.
                 log.println("Failed to receive FastCGI request: " + e);
             }
 
-            // A failed client must not stop the listening server. Reset the library's
-            // request state so the next accept does not reuse a broken input stream.
             if (FCGIInterface.request != null && FCGIInterface.request.socket != null) {
                 try {
                     FCGIInterface.request.socket.close();
